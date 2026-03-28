@@ -1,7 +1,5 @@
 // server.ts
-
-import express from "express";
-import { createClient } from "openclaw-websocket"; // exemplo; se quiser só HTTP, abaixo mostro fetch
+import express from 'express';
 import { parse as parseCookie } from "cookie";
 
 const app = express();
@@ -13,15 +11,14 @@ const sessions = new Map<string, { chatId: string; messages: any[] }>();
 const OPENCLAW_GATEWAY = "http://localhost:18789";
 
 function getSessionId(req: express.Request): string {
-  // Se quiser, você pode usar um cookie ou JWT
   const cookies = parseCookie(req.headers.cookie || "");
   let sid = cookies["session_id"];
-  if (!sid) sid = `sess_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-  if (!cookies["session_id"]) {
-    res.setHeader("Set-Cookie", `session_id=${sid}; Path=/; HttpOnly`);
+  if (!sid) {
+    sid = `sess_${Date.now()}_${Math.random().toString(36).slice(2)}`;
   }
   return sid;
 }
+
 
 // GET /api/tags → só um modelo fixo
 app.get("/api/tags", (_req, res) => {
@@ -65,11 +62,21 @@ app.post("/api/chat", async (req, res) => {
   };
 
   try {
-    const rsp = await fetch(`${OPENCLAW_GATEWAY}/v1/chat/completions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(openclawPayload),
-    });
+//const GATEWAY_TOKEN = "__OPENCLAW_REDACTED__"; // seu token aqui
+const GATEWAY_TOKEN = "31685159d72b89b89c24a43d6377801a"
+const rsp = await fetch("http://127.0.0.1:18789/tools/invoke", {
+  method: "POST",
+  headers: { 
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${GATEWAY_TOKEN}`
+  },
+  body: JSON.stringify({
+    tool: "echo",
+    args: { 
+      message: messages[messages.length - 1].content 
+    }
+  }),
+});
 
     if (!rsp.ok) throw new Error(`OpenClaw error: ${rsp.status}`);
 
